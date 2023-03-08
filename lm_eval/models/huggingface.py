@@ -22,7 +22,7 @@ class HuggingfaceCausalLM(LM):
         assert isinstance(device, str)
         assert isinstance(pretrained, str)
         # TODO: add "auto" option for batch size
-        assert isinstance(batch_size, int)
+        # assert isinstance(batch_size, int)
 
         # TODO
         if device:
@@ -55,6 +55,17 @@ class HuggingfaceCausalLM(LM):
 
         # TODO: add multi-gpu (FSDP and/or Accelerate)
         # multithreading and batching
+        if batch_size == "auto":
+            auto_batch_size = 64
+            try:
+                random_sample = torch.randint(0, self.vocab_size,
+                                             (auto_batch_size, self.hf_model.config.hidden_size)
+                                             ).to(self.device)
+                self._model_call(random_sample)
+                batch_size = auto_batch_size
+            except torch.cuda.OutOfMemoryError:
+                print("Out of memory, reducing batch size by factor of 2...")
+                auto_batch_size = max(1, auto_batch_size // 2)
         self.batch_size_per_gpu = batch_size 
 
     @property
